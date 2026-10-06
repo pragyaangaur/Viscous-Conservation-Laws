@@ -1,0 +1,15 @@
+# Lean build output and the Mathlib checkout (fetch with lake exe cache get)
+lean/.lake/
+
+# LaTeX build files
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+
+# Python and macOS
+__pycache__/
+*.pyc
+.DS_Store
