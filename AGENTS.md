@@ -4,7 +4,7 @@ Started 6 October 2026. The question was whether gradient descent being the over
 
 ## State on 6 October 2026
 
-Two rounds of work on 6 October. The second round added the novelty check in [NOVELTY.md](NOVELTY.md), a proof of the first-order formula in the mass, an exact identity for Nesterov's method, a proof of the step-size dichotomy for positive semidefinite generators, and Lean proofs of the matrix law and of the Nesterov results. The paper draft, the Lean proofs and the numerics are consistent with each other. Nothing is in git yet and nothing has been posted. The Lean project's `.lake/packages` was copied from `Mathematics/Principia Math/PolyhexHull` at the same Mathlib revision, with the prebuilt cache fetched by `lake exe cache get`. A full `lake build` takes several minutes.
+Two rounds of work on 6 October. The second round added the novelty check in [NOVELTY.md](NOVELTY.md), a proof of the first-order formula in the mass, an exact identity for Nesterov's method, a proof of the step-size dichotomy for positive semidefinite generators, and Lean proofs of the matrix law and of the Nesterov results. The paper draft, the Lean proofs and the numerics are consistent with each other. The repository has been public at github.com/pragyaangaur/Viscous-Conservation-Laws since 6 October 2026. The paper has not been posted to arXiv. The `.lake/` folder is ignored by git. The Lean project's `.lake/packages` was copied from `Mathematics/Principia Math/PolyhexHull` at the same Mathlib revision, with the prebuilt cache fetched by `lake exe cache get`. A full `lake build` takes several minutes.
 
 ## Where the novelty sits
 
