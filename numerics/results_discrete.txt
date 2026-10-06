@@ -1,0 +1,55 @@
+D1  heavy ball on the ReLU net, all four neurons
+  eta=0.05 beta=0.0  ell=21.74  eta*ell/(2(1-beta))=0.54
+    neuron 0: dQ= 7.000196e-03  identity err=2.4e-14  b1=1.515e-01  b2=3.231e-01  ok=True
+    neuron 1: dQ= 4.825040e-02  identity err=2.8e-14  b1=1.515e-01  b2=3.231e-01  ok=True
+    neuron 2: dQ= 3.922281e-03  identity err=6.3e-15  b1=1.515e-01  b2=3.231e-01  ok=True
+    neuron 3: dQ= 2.767547e-02  identity err=1.1e-14  b1=1.515e-01  b2=3.231e-01  ok=True
+  eta=0.05 beta=0.5  ell=6.83  eta*ell/(2(1-beta))=0.34
+    neuron 0: dQ= 4.278972e-02  identity err=9.7e-17  b1=8.965e-01  b2=1.344e+00  ok=True
+    neuron 1: dQ= 3.020922e-01  identity err=2.3e-14  b1=8.965e-01  b2=1.344e+00  ok=True
+    neuron 2: dQ= 2.514058e-02  identity err=3.7e-15  b1=8.965e-01  b2=1.344e+00  ok=True
+    neuron 3: dQ= 1.559560e-01  identity err=1.3e-14  b1=8.965e-01  b2=1.344e+00  ok=True
+  eta=0.02 beta=0.9  ell=3.15  eta*ell/(2(1-beta))=0.31
+    neuron 0: dQ= 7.451469e-01  identity err=5.9e-14  b1=1.132e+01  b2=1.635e+01  ok=True
+    neuron 1: dQ= 3.100027e+00  identity err=7.4e-14  b1=1.132e+01  b2=1.635e+01  ok=True
+    neuron 2: dQ= 3.345425e-01  identity err=6.5e-15  b1=1.132e+01  b2=1.635e+01  ok=True
+    neuron 3: dQ= 1.574502e+00  identity err=3.7e-14  b1=1.132e+01  b2=1.635e+01  ok=True
+  eta=0.005 beta=0.97  ell=25.45  eta*ell/(2(1-beta))=2.12
+    neuron 0: dQ= 2.315756e+00  identity err=2.9e-14  b1=3.238e+01  b2=-2.880e+01  ok=False
+    neuron 1: dQ= 5.182729e+00  identity err=2.7e-13  b1=3.238e+01  b2=-2.880e+01  ok=False
+    neuron 2: dQ= 7.813810e-01  identity err=1.7e-14  b1=3.238e+01  b2=-2.880e+01  ok=False
+    neuron 3: dQ= 2.787091e+00  identity err=8.9e-16  b1=3.238e+01  b2=-2.880e+01  ok=False
+
+D2  heavy ball scaling on the linear net, C[0,0].  I = 0.15730
+      eta  beta           dQ  (1+b) eta I/(1-b)^2   ratio
+    4e-03  0.00  6.42417e-04          6.29192e-04  1.0210
+    2e-03  0.00  3.17879e-04          3.14596e-04  1.0104
+    1e-03  0.00  1.58116e-04          1.57298e-04  1.0052
+    5e-04  0.00  7.88531e-05          7.86490e-05  1.0026
+    4e-03  0.50  3.97324e-03          3.77515e-03  1.0525
+    2e-03  0.50  1.93737e-03          1.88758e-03  1.0264
+    1e-03  0.50  9.56268e-04          9.43788e-04  1.0132
+    5e-04  0.50  4.75018e-04          4.71894e-04  1.0066
+    4e-03  0.90  1.33937e-01          1.19546e-01  1.1204
+    2e-03  0.90  7.62018e-02          5.97732e-02  1.2748
+    1e-03  0.90  3.71206e-02          2.98866e-02  1.2420
+    5e-04  0.90  1.72118e-02          1.49433e-02  1.1518
+
+D3  Nesterov vs heavy ball as the step shrinks (linear net, C[0,0])
+    Nesterov ODE value from exp_continuous.py: about 0.2911
+     step  Nesterov dQ    iters   HB(0.9) dQ
+    1e-02  1.37326e-01  4000000  2.07402e-01
+    3e-03  1.71448e-01  4000000  1.08706e-01
+    1e-03  2.01900e-01  4000000  3.71206e-02
+    3e-04  2.30530e-01  4000000  9.84170e-03
+    1e-04  2.50522e-01  4000000  3.09135e-03
+  same test on the ReLU net, neuron 0
+    3e-02  2.48289e+00  2000000  1.17834e+00
+    1e-02  2.79249e+00  2000000  3.22355e-01
+    3e-03  3.07378e+00  2000000  8.26419e-02
+    1e-03  3.33380e+00  2000000  2.67002e-02
+
+D4  matrix law on the linear net: ||dC||_* vs (1+b)/(1-b) sum|v|^2
+  eta=0.01 beta=0.0  ||dC||_*=5.6547e-02  bound=8.7151e-02  ratio=0.649
+  eta=0.01 beta=0.5  ||dC||_*=3.3845e-01  bound=5.2037e-01  ratio=0.650
+  eta=0.003 beta=0.9  ||dC||_*=3.2475e+00  bound=4.9075e+00  ratio=0.662
