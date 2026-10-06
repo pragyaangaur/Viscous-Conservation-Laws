@@ -13,3 +13,6 @@ paper/*.synctex.gz
 __pycache__/
 *.pyc
 .DS_Store
+
+# Agent notes, kept local
+AGENTS.md
