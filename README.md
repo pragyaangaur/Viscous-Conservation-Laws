@@ -24,7 +24,11 @@ Proved on paper only: the first-order formula in the mass and its lemma, the lim
 
 The bounds hold in every run but are loose for typical initialisations, by factors between about 3 and 80, because the kinetic term has both signs. The discrete energy bound needs ηℓ < 2(1−β) with ℓ measured along the run, and this fails for η = 0.005, β = 0.97, where the bound does not apply.
 
-[NOVELTY.md](NOVELTY.md) records which claims are known and which were not found in the prior work.
+## What is new and what is not
+
+The differential identities under momentum are known in substance from Tanaka and Kunin (2021), Kunin et al. (2021) and, for Nesterov's ODE, Gluch and Urbanke (2021). The plain gradient descent case is in Ziyin et al. (2024), and the discrete identity for the squared norm of scale-invariant weights is Lemma 2.2 of Heo et al. (AdamP, 2021). The first-order formula in the mass follows formally from the slow-manifold expansion, so only its limit at infinite time is new. The paper credits each of these where it is used.
+
+What was not found in the 29 papers read in full: the uniform-in-time bounds for heavy ball and their sharpness, which give a theory for the boundedness that Marcotte et al. (2024, Appendix N) observed in experiments and left open; the discrete identity and bound for a general generator; the exact identity for Nesterov's method and the dichotomy for positive semidefinite generators; the nuclear-norm bound; and the Lean formalisation. [NOVELTY.md](NOVELTY.md) gives the claim-by-claim table with the exact theorem or equation of each overlap.
 
 ## Running it
 
