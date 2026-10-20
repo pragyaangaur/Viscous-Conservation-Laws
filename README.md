@@ -1,8 +1,10 @@
 # Viscosity ML
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23510521.svg)](https://doi.org/10.5281/zenodo.23510521)
+
 Gradient descent is the overdamped limit of a ball rolling through a viscous fluid, and momentum puts the mass back. This project asks what that friction does to the conservation laws that symmetries give a network, such as the balancedness of a ReLU neuron or the matrix W1 W1ᵀ − W2ᵀ W2 of a linear network. Momentum is known to destroy these laws exactly. We show that they survive approximately and that the ratio of inertia to friction controls how well.
 
-The write-up is a preprint on Zenodo, archived with version 1.0.0 of this repository.
+The write-up is a preprint on Zenodo at [10.5281/zenodo.23510522](https://doi.org/10.5281/zenodo.23510522), archived with version 1.0.0 of this repository.
 
 ## Results
 
@@ -30,6 +32,14 @@ The differential identities under momentum are known in substance from Tanaka an
 
 What was not found in the 29 papers read in full: the uniform-in-time bounds for heavy ball and their sharpness, which give a theory for the boundedness that Marcotte et al. (2024, Appendix N) observed in experiments and left open; the discrete identity and bound for a general generator; the exact identity for Nesterov's method and the dichotomy for positive semidefinite generators; the nuclear-norm bound; and the Lean formalisation. [NOVELTY.md](NOVELTY.md) gives the claim-by-claim table with the exact theorem or equation of each overlap.
 
+## Citing this work
+
+The paper and the code at tag `v1.0.0` are archived together on Zenodo. The paper is not kept in this repository.
+
+> Gaur, P. (2026). *Friction keeps the conservation laws of training alive: exact drift identities for heavy ball and Nesterov momentum* (Version 1.0.0). Zenodo. https://doi.org/10.5281/zenodo.23510522
+
+The DOI 10.5281/zenodo.23510521 always resolves to the newest version. GitHub's "Cite this repository" button reads the same details from `CITATION.cff`.
+
 ## Running it
 
 The numerics need numpy, scipy and matplotlib. Each script prints its table, and the saved outputs are the `results_*.txt` files next to them.
@@ -50,4 +60,4 @@ To check the proofs, fetch the Mathlib cache once and build.
 cd lean && lake exe cache get && lake build
 ```
 
-The paper itself is on Zenodo and is not kept in this repository.
+The paper itself is on [Zenodo](https://doi.org/10.5281/zenodo.23510522) and is not kept in this repository.

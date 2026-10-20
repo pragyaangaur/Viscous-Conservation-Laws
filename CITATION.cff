@@ -6,6 +6,11 @@ authors:
     given-names: Pragyaan
     orcid: "https://orcid.org/0009-0009-4037-2478"
 repository-code: "https://github.com/pragyaangaur/Viscous-Conservation-Laws"
+doi: "10.5281/zenodo.23510522"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23510521"
+    description: "Concept DOI, always the newest version on Zenodo"
 license: MIT
 version: "1.0.0"
 date-released: "2026-10-21"
