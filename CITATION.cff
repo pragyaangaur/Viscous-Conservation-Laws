@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Friction keeps the conservation laws of training alive: exact drift identities for heavy ball and Nesterov momentum"
+authors:
+  - family-names: Gaur
+    given-names: Pragyaan
+    orcid: "https://orcid.org/0009-0009-4037-2478"
+repository-code: "https://github.com/pragyaangaur/Viscous-Conservation-Laws"
+license: MIT
+version: "1.0.0"
+date-released: "2026-10-21"
+keywords:
+  - conservation laws
+  - momentum
+  - heavy ball
+  - Nesterov acceleration
+  - implicit bias
+  - Lean 4
+abstract: >-
+  Exact identities and uniform-in-time bounds for how heavy ball and Nesterov momentum
+  break the quadratic conservation laws that symmetries give a network, with a proof that
+  Nesterov's schedule keeps a step-size independent drift for positive semidefinite
+  generators. The identities and finite-time bounds are formalised in Lean 4 with Mathlib.

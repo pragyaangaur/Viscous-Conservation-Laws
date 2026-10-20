@@ -2,7 +2,7 @@
 
 Gradient descent is the overdamped limit of a ball rolling through a viscous fluid, and momentum puts the mass back. This project asks what that friction does to the conservation laws that symmetries give a network, such as the balancedness of a ReLU neuron or the matrix W1 W1ᵀ − W2ᵀ W2 of a linear network. Momentum is known to destroy these laws exactly. We show that they survive approximately and that the ratio of inertia to friction controls how well.
 
-The write-up is [paper/main.pdf](paper/main.pdf), with the source in [paper/main.tex](paper/main.tex).
+The write-up is a preprint on Zenodo, archived with version 1.0.0 of this repository.
 
 ## Results
 
@@ -50,4 +50,4 @@ To check the proofs, fetch the Mathlib cache once and build.
 cd lean && lake exe cache get && lake build
 ```
 
-To rebuild the paper, run `latexmk -pdf main.tex` inside `paper/`.
+The paper itself is on Zenodo and is not kept in this repository.
