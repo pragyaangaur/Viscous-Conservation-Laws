@@ -350,6 +350,92 @@ theorem Traj.l2_le (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
         rw [hPsi, hPsi0]; linarith
     _ = m * c * (G / γ + 2 * G * H * S / γ ^ 2) := by ring
 
+/-- On `[0, S]` the integrated kinetic terms of heavy ball and of gradient flow differ by
+at most a constant times `√m`. -/
+theorem Traj.K_integral_diff (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
+    (Fl : Flow F B γ φ φ') (hm : 0 < m) (h0 : θ 0 = φ 0) {S : ℝ} (hS : 0 ≤ S) :
+    |(∫ t in (0 : ℝ)..S, ⟪v t, A (v t)⟫) -
+        ∫ t in (0 : ℝ)..S, ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2| ≤
+      ‖A‖ * (G / γ) * Real.sqrt m *
+        (G / γ ^ 2 * Real.exp (H * S / γ) * (G / γ + 2 * G * H * S / γ ^ 2) + S) := by
+  have hγ := P.gamma
+  have hG := P.Gnn
+  set r := Real.sqrt m with hr
+  have hr0 : 0 < r := Real.sqrt_pos.2 hm
+  have hr2 : r ^ 2 = m := Real.sq_sqrt hm.le
+  set c := G / γ ^ 2 * Real.exp (H * S / γ) with hc
+  have hc0 : 0 ≤ c := by positivity
+  have hsub : Set.Icc (0 : ℝ) S ⊆ Set.Ici 0 := Set.Icc_subset_Ici_self
+  have hcv := T.contv.mono hsub
+  have hcFφ := (Fl.contFφ P).mono hsub
+  have hI : Set.uIcc (0 : ℝ) S = Set.Icc 0 S := Set.uIcc_of_le hS
+  have hAv : ContinuousOn (fun t => ⟪v t, A (v t)⟫) (Set.Icc 0 S) :=
+    hcv.inner (A.continuous.comp_continuousOn hcv)
+  have hAF : ContinuousOn (fun t => ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2) (Set.Icc 0 S) :=
+    (hcFφ.inner (A.continuous.comp_continuousOn hcFφ)).div_const _
+  have hw_cont : ContinuousOn (fun t => ‖v t + (1 / γ) • F (φ t)‖ ^ 2) (Set.Icc 0 S) :=
+    ((hcv.add (continuousOn_const.smul hcFφ)).norm).pow 2
+  have hw1 : ContinuousOn (fun t => ‖v t + (1 / γ) • F (φ t)‖) (Set.Icc 0 S) :=
+    (hcv.add (continuousOn_const.smul hcFφ)).norm
+  have hl2 := T.l2_le P Fl hm h0 hS
+  rw [← intervalIntegral.integral_sub
+    (by rw [← hI] at hAv; exact hAv.intervalIntegrable)
+    (by rw [← hI] at hAF; exact hAF.intervalIntegrable)]
+  refine (abs_integral_le_integral_abs hS).trans ?_
+  have hpt : ∀ t ∈ Set.Icc (0 : ℝ) S,
+      |⟪v t, A (v t)⟫ - ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2| ≤
+        ‖A‖ * (G / γ) * (‖v t + (1 / γ) • F (φ t)‖ ^ 2 / r + r) := by
+    intro t ht
+    have ht0 : 0 ≤ t := ht.1
+    have hvb := T.vel_bound P hm ht0
+    have hFb := P.bound _ (Fl.mem t ht0)
+    set p : E := (1 / γ) • F (φ t) with hp
+    have hpn : ‖p‖ ≤ G / γ := by
+      rw [hp, norm_smul, norm_div, norm_one, Real.norm_of_nonneg hγ.le, one_div, ← div_eq_inv_mul]
+      exact div_le_div_of_nonneg_right hFb hγ.le
+    have hid : ⟪v t, A (v t)⟫ - ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2 = ⟪v t + p, A (v t - p)⟫ := by
+      have hpp : ⟪p, A p⟫ = ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2 := by
+        rw [hp, map_smul, real_inner_smul_left, real_inner_smul_right]; field_simp
+      rw [← hpp]
+      simp only [map_sub, inner_add_left, inner_sub_right]
+      have : ⟪p, A (v t)⟫ = ⟪v t, A p⟫ := by rw [← P.symm, real_inner_comm]
+      rw [this]; ring
+    rw [hid]
+    have h1 : |⟪v t + p, A (v t - p)⟫| ≤ ‖v t + p‖ * (‖A‖ * ‖v t - p‖) := by
+      refine (abs_real_inner_le_norm _ _).trans ?_
+      gcongr
+      exact A.le_opNorm _
+    have h2 : ‖v t - p‖ ≤ 2 * (G / γ) := by
+      calc ‖v t - p‖ ≤ ‖v t‖ + ‖p‖ := norm_sub_le _ _
+        _ ≤ 2 * (G / γ) := by linarith
+    have h3 : 2 * ‖v t + p‖ ≤ ‖v t + p‖ ^ 2 / r + r := by
+      rw [← sub_nonneg]
+      have : ‖v t + p‖ ^ 2 / r + r - 2 * ‖v t + p‖ = (‖v t + p‖ - r) ^ 2 / r := by
+        field_simp; ring
+      rw [this]; positivity
+    calc |⟪v t + p, A (v t - p)⟫| ≤ ‖v t + p‖ * (‖A‖ * ‖v t - p‖) := h1
+      _ ≤ ‖v t + p‖ * (‖A‖ * (2 * (G / γ))) := by gcongr
+      _ = ‖A‖ * (G / γ) * (2 * ‖v t + p‖) := by ring
+      _ ≤ ‖A‖ * (G / γ) * (‖v t + p‖ ^ 2 / r + r) := by gcongr
+  have hcont_abs : ContinuousOn (fun t => |⟪v t, A (v t)⟫ - ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2|)
+      (Set.Icc 0 S) := (hAv.sub hAF).abs
+  have hcont_rhs : ContinuousOn
+      (fun t => ‖A‖ * (G / γ) * (‖v t + (1 / γ) • F (φ t)‖ ^ 2 / r + r)) (Set.Icc 0 S) :=
+    continuousOn_const.mul ((hw_cont.div_const r).add continuousOn_const)
+  calc ∫ t in (0 : ℝ)..S, |⟪v t, A (v t)⟫ - ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2|
+      ≤ ∫ t in (0 : ℝ)..S, ‖A‖ * (G / γ) * (‖v t + (1 / γ) • F (φ t)‖ ^ 2 / r + r) :=
+        integral_mono_on hS (by rw [← hI] at hcont_abs; exact hcont_abs.intervalIntegrable)
+          (by rw [← hI] at hcont_rhs; exact hcont_rhs.intervalIntegrable) hpt
+    _ = ‖A‖ * (G / γ) * ((∫ t in (0 : ℝ)..S, ‖v t + (1 / γ) • F (φ t)‖ ^ 2) / r + S * r) := by
+        rw [intervalIntegral.integral_const_mul, intervalIntegral.integral_add
+          (by rw [← hI] at hw_cont; exact (hw_cont.div_const r).intervalIntegrable)
+          intervalIntegrable_const, intervalIntegral.integral_div]
+        simp
+    _ ≤ ‖A‖ * (G / γ) * (m * c * (G / γ + 2 * G * H * S / γ ^ 2) / r + S * r) := by
+        gcongr
+    _ = _ := by
+        rw [← hr2]; field_simp
+
 end Setup
 
 end ViscosityML
