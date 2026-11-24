@@ -1,0 +1,8 @@
+C1  Theorem 9, heavy ball with Nesterov's schedule, ReLU net, neuron 0
+  worst error: P_N 2.6e-18 (absolute), Q_N - Q_0 1.6e-12 (relative)
+C2  Corollary 7, matrix identity, linear net
+  eta=0.01 beta=0.0: worst relative error 2.1e-13
+  eta=0.01 beta=0.5: worst relative error 2.1e-13
+  eta=0.003 beta=0.9: worst relative error 2.7e-12
+C3  Theorem 10, exact weights for Nesterov's method, ReLU net, neuron 0
+  worst relative error 1.6e-12
