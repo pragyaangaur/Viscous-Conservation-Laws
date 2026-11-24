@@ -803,6 +803,183 @@ theorem first_order_mass (P : Prob F L A B γ G H) (Fl : Flow F B γ φ φ') {m�
   rw [e] at hfin
   exact hfin
 
-end Setup
+/-- The cross term `P = ⟪v, A θ⟫` solves `P' = K - (γ/m) P`. -/
+lemma Traj.hasDeriv_exp_P (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a) (hm : 0 < m)
+    {t : ℝ} (ht : 0 ≤ t) :
+    HasDerivAt (fun s => Real.exp (γ / m * s) * ⟪v s, A (θ s)⟫)
+      (Real.exp (γ / m * t) * ⟪v t, A (v t)⟫) t := by
+  have hexp : HasDerivAt (fun s => Real.exp (γ / m * s)) (γ / m * Real.exp (γ / m * t)) t := by
+    have := ((hasDerivAt_id t).const_mul (γ / m)).exp
+    simpa [mul_comm] using this
+  have h := hexp.mul (hasDerivAt_P (A := A) (T.dθ t ht) (T.dv t ht))
+  refine h.congr_deriv ?_
+  have key : m * ⟪a t, A (θ t)⟫ = -γ * ⟪v t, A (θ t)⟫ := by
+    have := congrArg (fun w => ⟪w, A (θ t)⟫) (T.ode t ht)
+    simp only [inner_add_left, real_inner_smul_left, inner_neg_left, P.orth (θ t),
+      neg_zero] at this
+    linarith
+  have key' : ⟪a t, A (θ t)⟫ = -(γ / m) * ⟪v t, A (θ t)⟫ := by
+    field_simp; linarith
+  rw [key']; ring
 
-end ViscosityML
+/-- The integral of `|K|` over `[0, x]` is bounded by the energy dissipated. -/
+lemma Traj.int_abs_K_le_Mb (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a) {Lstar : ℝ}
+    (hm : 0 ≤ m) (hL : ∀ x, Lstar ≤ L x) {x : ℝ} (hx : 0 ≤ x) :
+    ∫ t in (0 : ℝ)..x, |⟪v t, A (v t)⟫| ≤ ‖A‖ * ((L (θ 0) - Lstar) / γ) := by
+  have hγ := P.gamma
+  have h1 := T.int_abs_K_le P (s₀ := 0) le_rfl hx
+  have h2 := T.int_v_sq P (s₀ := 0) le_rfl hx
+  have hLb := hL (θ x)
+  have h3 : (∫ t in (0 : ℝ)..x, ‖v t‖ ^ 2) ≤ (L (θ 0) - Lstar) / γ := by
+    rw [le_div_iff₀ hγ, mul_comm]
+    simp only [T.rest, norm_zero] at h2
+    have : 0 ≤ m / 2 * ‖v x‖ ^ 2 := by positivity
+    linarith
+  exact h1.trans (by gcongr)
+
+/-- The cross term tends to zero when the kinetic term is integrable. -/
+theorem Traj.P_tendsto (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a) {Lstar : ℝ}
+    (hm : 0 < m) (hL : ∀ x, Lstar ≤ L x) :
+    Tendsto (fun S => ⟪v S, A (θ S)⟫) atTop (𝓝 0) := by
+  have hγ := P.gamma
+  set c := γ / m with hc
+  have hc0 : 0 < c := div_pos hγ hm
+  have hint := (T.integrable_K P hm.le hL).norm
+  set Fa : ℝ → ℝ := fun x => ∫ t in (0 : ℝ)..x, |⟪v t, A (v t)⟫| with hFa
+  have hFlim : Tendsto Fa atTop (𝓝 (∫ t in Set.Ioi (0 : ℝ), ‖⟪v t, A (v t)⟫‖)) := by
+    simpa [hFa, Real.norm_eq_abs] using
+      intervalIntegral_tendsto_integral_Ioi 0 hint tendsto_id
+  set Mb := ‖A‖ * ((L (θ 0) - Lstar) / γ) with hMb
+  have hFle : ∀ x, 0 ≤ x → Fa x ≤ Mb := fun x hx => T.int_abs_K_le_Mb P hm.le hL hx
+  have hsub : ∀ x : ℝ, 0 ≤ x → Set.Icc (0 : ℝ) x ⊆ Set.Ici 0 := fun x _ => Set.Icc_subset_Ici_self
+  have hcK : ∀ x : ℝ, 0 ≤ x → ContinuousOn (fun t => ⟪v t, A (v t)⟫) (Set.Icc 0 x) := fun x hx =>
+    ((T.contv.mono (hsub x hx)).inner (A.continuous.comp_continuousOn (T.contv.mono (hsub x hx))))
+  have hbound : ∀ S : ℝ, 0 ≤ S → |⟪v S, A (θ S)⟫| ≤
+      Real.exp (-(c * S / 2)) * Mb + (Fa S - Fa (S / 2)) := by
+    intro S hS
+    have hS2 : 0 ≤ S / 2 := by positivity
+    have hI : Set.uIcc (0 : ℝ) S = Set.Icc 0 S := Set.uIcc_of_le hS
+    have hcont : ContinuousOn (fun t => Real.exp (c * t) * ⟪v t, A (v t)⟫) (Set.Icc 0 S) :=
+      (by fun_prop : Continuous fun t : ℝ => Real.exp (c * t)).continuousOn.mul (hcK S hS)
+    have hid := integral_eq_sub_of_hasDerivAt
+      (fun t ht => by rw [hI] at ht; exact T.hasDeriv_exp_P P hm ht.1)
+      (by rw [← hI] at hcont; exact hcont.intervalIntegrable)
+    simp only [mul_zero, Real.exp_zero, one_mul, T.rest, inner_zero_left] at hid
+    have hPS : ⟪v S, A (θ S)⟫ = Real.exp (-(c * S)) * ∫ t in (0 : ℝ)..S,
+        Real.exp (c * t) * ⟪v t, A (v t)⟫ := by
+      rw [hid, sub_zero]
+      have e : Real.exp (-(c * S)) * Real.exp (γ / m * S) = 1 := by
+        rw [← Real.exp_add, hc]; simp
+      rw [← mul_assoc, e, one_mul]
+    have habs : ∀ t, |Real.exp (c * t) * ⟪v t, A (v t)⟫| = Real.exp (c * t) * |⟪v t, A (v t)⟫| := by
+      intro t; rw [abs_mul, abs_of_pos (Real.exp_pos _)]
+    have hiK : ∀ x y : ℝ, 0 ≤ x → x ≤ y → IntervalIntegrable (fun t => |⟪v t, A (v t)⟫|)
+        volume x y := by
+      intro x y hx hxy
+      exact ContinuousOn.intervalIntegrable ((hcK y (hx.trans hxy)).abs.mono
+        (by rw [Set.uIcc_of_le hxy]; exact Set.Icc_subset_Icc hx le_rfl))
+    have hiE : ∀ x y : ℝ, 0 ≤ x → x ≤ y →
+        IntervalIntegrable (fun t => Real.exp (c * t) * |⟪v t, A (v t)⟫|) volume x y := by
+      intro x y hx hxy
+      exact ContinuousOn.intervalIntegrable
+        ((((by fun_prop : Continuous fun t : ℝ => Real.exp (c * t)).continuousOn).mul
+          (hcK y (hx.trans hxy)).abs).mono
+        (by rw [Set.uIcc_of_le hxy]; exact Set.Icc_subset_Icc hx le_rfl))
+    have hA1 : ∫ t in (0 : ℝ)..S / 2, Real.exp (c * t) * |⟪v t, A (v t)⟫| ≤
+        Real.exp (c * (S / 2)) * Fa (S / 2) := by
+      have : Real.exp (c * (S / 2)) * Fa (S / 2) =
+          ∫ t in (0 : ℝ)..S / 2, Real.exp (c * (S / 2)) * |⟪v t, A (v t)⟫| := by
+        rw [intervalIntegral.integral_const_mul]
+      rw [this]
+      refine integral_mono_on hS2 (hiE 0 _ le_rfl hS2)
+        ((hiK 0 _ le_rfl hS2).const_mul _) fun t ht => ?_
+      have : Real.exp (c * t) ≤ Real.exp (c * (S / 2)) :=
+        Real.exp_le_exp.2 (by nlinarith [ht.2])
+      exact mul_le_mul_of_nonneg_right this (abs_nonneg _)
+    have hA2 : ∫ t in S / 2..S, Real.exp (c * t) * |⟪v t, A (v t)⟫| ≤
+        Real.exp (c * S) * (Fa S - Fa (S / 2)) := by
+      have hd : Fa S - Fa (S / 2) = ∫ t in S / 2..S, |⟪v t, A (v t)⟫| :=
+        intervalIntegral.integral_interval_sub_left (hiK 0 S le_rfl hS) (hiK 0 (S / 2) le_rfl hS2)
+      rw [hd, ← intervalIntegral.integral_const_mul]
+      refine integral_mono_on (by linarith) (hiE _ _ hS2 (by linarith))
+        ((hiK _ _ hS2 (by linarith)).const_mul _) fun t ht => ?_
+      have : Real.exp (c * t) ≤ Real.exp (c * S) := Real.exp_le_exp.2 (by nlinarith [ht.2])
+      exact mul_le_mul_of_nonneg_right this (abs_nonneg _)
+    have hsplit : ∫ t in (0 : ℝ)..S, Real.exp (c * t) * |⟪v t, A (v t)⟫| =
+        (∫ t in (0 : ℝ)..S / 2, Real.exp (c * t) * |⟪v t, A (v t)⟫|) +
+          ∫ t in S / 2..S, Real.exp (c * t) * |⟪v t, A (v t)⟫| :=
+      (intervalIntegral.integral_add_adjacent_intervals (hiE 0 _ le_rfl hS2)
+        (hiE _ _ hS2 (by linarith))).symm
+    have habsint : |∫ t in (0 : ℝ)..S, Real.exp (c * t) * ⟪v t, A (v t)⟫| ≤
+        ∫ t in (0 : ℝ)..S, Real.exp (c * t) * |⟪v t, A (v t)⟫| := by
+      refine (abs_integral_le_integral_abs hS).trans (le_of_eq ?_)
+      exact intervalIntegral.integral_congr fun t _ => habs t
+    have hFS2 := hFle (S / 2) hS2
+    have hexp0 : 0 ≤ Real.exp (-(c * S)) := (Real.exp_pos _).le
+    rw [hPS, abs_mul, abs_of_nonneg hexp0]
+    have e1 : Real.exp (-(c * S)) * Real.exp (c * (S / 2)) = Real.exp (-(c * S / 2)) := by
+      rw [← Real.exp_add]; congr 1; ring
+    have e2 : Real.exp (-(c * S)) * Real.exp (c * S) = 1 := by
+      rw [← Real.exp_add]; simp
+    calc Real.exp (-(c * S)) * |∫ t in (0 : ℝ)..S, Real.exp (c * t) * ⟪v t, A (v t)⟫|
+        ≤ Real.exp (-(c * S)) * ((Real.exp (c * (S / 2)) * Fa (S / 2)) +
+            Real.exp (c * S) * (Fa S - Fa (S / 2))) := by
+          gcongr
+          rw [hsplit] at habsint
+          linarith
+      _ = Real.exp (-(c * S / 2)) * Fa (S / 2) + (Fa S - Fa (S / 2)) := by
+          rw [mul_add, ← mul_assoc, e1, ← mul_assoc, e2, one_mul]
+      _ ≤ Real.exp (-(c * S / 2)) * Mb + (Fa S - Fa (S / 2)) := by
+          gcongr
+  have hlim : Tendsto (fun S => Real.exp (-(c * S / 2)) * Mb + (Fa S - Fa (S / 2))) atTop
+      (𝓝 0) := by
+    have h1 : Tendsto (fun S : ℝ => Real.exp (-(c * S / 2)) * Mb) atTop (𝓝 (0 * Mb)) := by
+      refine Tendsto.mul_const _ ?_
+      refine Real.tendsto_exp_atBot.comp ?_
+      refine tendsto_neg_atTop_atBot.comp ?_
+      exact (tendsto_id.const_mul_atTop hc0 |>.atTop_div_const (by norm_num : (0:ℝ) < 2))
+    have h2 : Tendsto (fun S => Fa (S / 2)) atTop _ :=
+      hFlim.comp (tendsto_id.atTop_div_const (by norm_num : (0:ℝ) < 2))
+    have := h1.add (hFlim.sub h2)
+    simpa using this
+  refine squeeze_zero_norm' ?_ hlim
+  filter_upwards [eventually_ge_atTop (0 : ℝ)] with S hS
+  rw [Real.norm_eq_abs]
+  exact hbound S hS
+
+/-- Under (H1) the quantity `Q` has a limit as `t → ∞`, equal to `Q 0 + (2m/γ) ∫₀^∞ K`. -/
+theorem Traj.Q_tendsto (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a) {Lstar : ℝ}
+    (hm : 0 < m) (hL : ∀ x, Lstar ≤ L x) :
+    Tendsto (fun S => Q A (θ S)) atTop
+      (𝓝 (Q A (θ 0) + 2 * m / γ * ∫ t in Set.Ioi (0 : ℝ), ⟪v t, A (v t)⟫)) := by
+  have hγ := P.gamma
+  have h1 := T.P_tendsto P hm hL
+  have h2 : Tendsto (fun S => ∫ t in (0 : ℝ)..S, ⟪v t, A (v t)⟫) atTop
+      (𝓝 (∫ t in Set.Ioi (0 : ℝ), ⟪v t, A (v t)⟫)) :=
+    intervalIntegral_tendsto_integral_Ioi 0 (T.integrable_K P hm.le hL) tendsto_id
+  have h3 := ((h2.const_mul (2 * m / γ)).sub (h1.const_mul (2 * m / γ))).const_add (Q A (θ 0))
+  refine (h3.congr' ?_).trans_eq ?_
+  · filter_upwards [eventually_ge_atTop (0 : ℝ)] with S hS
+    have := T.identity P hS
+    field_simp
+    linarith
+  · simp
+
+/-- Theorem 3 with the existence of the limits proved: for every `m` the limit of `Q` exists,
+and the quotient `(Q∞ - Q 0) / m` tends to `(2/γ³) ∫₀^∞ ⟪F, A F⟫` along gradient flow. -/
+theorem first_order_mass_full (P : Prob F L A B γ G H) (Fl : Flow F B γ φ φ') {m₀ Lstar : ℝ}
+    (hm₀ : 0 < m₀) (hL : ∀ x, Lstar ≤ L x)
+    (hH2 : Tendsto (fun t => L (φ t)) atTop (𝓝 Lstar))
+    {θ v a : ℝ → ℝ → E}
+    (hT : ∀ m, 0 < m → m ≤ m₀ → Traj F B γ m (θ m) (v m) (a m))
+    (h0 : ∀ m, 0 < m → m ≤ m₀ → θ m 0 = φ 0) :
+    (∀ m, 0 < m → m ≤ m₀ → ∃ Qinf, Tendsto (fun T => Q A (θ m T)) atTop (𝓝 Qinf)) ∧
+    ∀ Qinf : ℝ → ℝ,
+      (∀ m, 0 < m → m ≤ m₀ → Tendsto (fun T => Q A (θ m T)) atTop (𝓝 (Qinf m))) →
+      Tendsto (fun m => (Qinf m - Q A (φ 0)) / m) (𝓝[>] 0)
+        (𝓝 (2 / γ ^ 3 * ∫ t in Set.Ioi (0 : ℝ), ⟪F (φ t), A (F (φ t))⟫)) :=
+  ⟨fun m hm hmm => ⟨_, (hT m hm hmm).Q_tendsto P hm hL⟩, fun Qinf hQ =>
+    first_order_mass P Fl hm₀ hL hH2 hT h0 hQ
+      (fun m hm hmm => (hT m hm hmm).P_tendsto P hm hL)⟩
+
+end Setup
