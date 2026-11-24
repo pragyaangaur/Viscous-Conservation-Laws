@@ -195,6 +195,161 @@ theorem Traj.dist_flow_le (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
     field_simp; ring, le_div_iff₀ hγ]
   nlinarith [hnorm, key]
 
+lemma Prob.L_sub_le (P : Prob F L A B γ G H) {x y : E} (hx : x ∈ B) (hy : y ∈ B) :
+    L x - L y ≤ G * ‖x - y‖ := by
+  have := P.conv.norm_image_sub_le_of_norm_hasFDerivWithin_le (f := L)
+    (f' := fun x => innerSL ℝ (F x)) (C := G)
+    (fun x _ => (P.grad x).hasFDerivWithinAt)
+    (fun x hx => by rw [innerSL_apply_norm]; exact P.bound x hx) hy hx
+  exact (le_abs_self _).trans (by simpa [Real.norm_eq_abs] using this)
+
+lemma Prob.contOn (P : Prob F L A B γ G H) : ContinuousOn F B := by
+  have : LipschitzOnWith H.toNNReal F B := LipschitzOnWith.of_dist_le_mul (fun x hx y hy => by
+    rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ P.Hpos.le]; exact P.lip x hx y hy)
+  exact this.continuousOn
+
+lemma Traj.contθ (T : Traj F B γ m θ v a) : ContinuousOn θ (Set.Ici 0) := fun t ht =>
+  (T.dθ t ht).continuousAt.continuousWithinAt
+
+lemma Traj.contv (T : Traj F B γ m θ v a) : ContinuousOn v (Set.Ici 0) := fun t ht =>
+  (T.dv t ht).continuousAt.continuousWithinAt
+
+lemma Traj.contFθ (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a) :
+    ContinuousOn (fun t => F (θ t)) (Set.Ici 0) :=
+  P.contOn.comp T.contθ (fun t ht => T.mem t ht)
+
+variable {φ φ' : ℝ → E}
+
+lemma Flow.contφ (Fl : Flow F B γ φ φ') : ContinuousOn φ (Set.Ici 0) := fun t ht =>
+  (Fl.dφ t ht).continuousAt.continuousWithinAt
+
+lemma Flow.contFφ (P : Prob F L A B γ G H) (Fl : Flow F B γ φ φ') :
+    ContinuousOn (fun t => F (φ t)) (Set.Ici 0) :=
+  P.contOn.comp Fl.contφ (fun t ht => Fl.mem t ht)
+
+/-- The derivative of the energy-type function `Ψ = (L θ - m/2 ‖v‖² - L φ) / γ`. -/
+lemma Traj.hasDeriv_Psi (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
+    (Fl : Flow F B γ φ φ') {t : ℝ} (ht : 0 ≤ t) :
+    HasDerivAt (fun s => (L (θ s) - m / 2 * ‖v s‖ ^ 2 - L (φ s)) / γ)
+      (‖v t‖ ^ 2 + 2 * ⟪F (θ t), v t⟫ / γ + ‖F (φ t)‖ ^ 2 / γ ^ 2) t := by
+  have hγ := P.gamma
+  have hLθ : HasDerivAt (fun s => L (θ s)) ⟪F (θ t), v t⟫ t := by
+    have := (P.grad (θ t)).comp_hasDerivAt t (T.dθ t ht)
+    convert this using 1
+    · rfl
+    · simp
+  have hLφ : HasDerivAt (fun s => L (φ s)) ⟪F (φ t), φ' t⟫ t := by
+    have := (P.grad (φ t)).comp_hasDerivAt t (Fl.dφ t ht)
+    convert this using 1
+    · rfl
+    · simp
+  have hsq := (hasDerivAt_sq (T.dv t ht)).const_mul (m / 2)
+  have hd := ((hLθ.sub hsq).sub hLφ).div_const γ
+  refine hd.congr_deriv ?_
+  have hmva : m * ⟪v t, a t⟫ = -⟪v t, F (θ t)⟫ - γ * ‖v t‖ ^ 2 := by
+    have := congrArg (fun w => ⟪v t, w⟫) (T.ode t ht)
+    simp only [inner_add_right, real_inner_smul_right, inner_neg_right,
+      real_inner_self_eq_norm_sq] at this
+    linarith
+  have hφ : γ * ⟪F (φ t), φ' t⟫ = -‖F (φ t)‖ ^ 2 := by
+    have := congrArg (fun w => ⟪F (φ t), w⟫) (Fl.ode t ht)
+    simp only [real_inner_smul_right, inner_neg_right, real_inner_self_eq_norm_sq] at this
+    linarith
+  have hY : ⟪F (φ t), φ' t⟫ = -‖F (φ t)‖ ^ 2 / γ := by
+    field_simp; linarith
+  have e : m / 2 * (2 * ⟪v t, a t⟫) = m * ⟪v t, a t⟫ := by ring
+  rw [e, hmva, hY, real_inner_comm (v t) (F (θ t))]
+  field_simp
+  ring
+
+/-- The `L²` estimate on `[0, S]`: the velocity of the heavy ball is within `O(m)` of the
+velocity `-F(φ)/γ` of gradient flow in the mean square. -/
+theorem Traj.l2_le (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
+    (Fl : Flow F B γ φ φ') (hm : 0 < m) (h0 : θ 0 = φ 0) {S : ℝ} (hS : 0 ≤ S) :
+    ∫ t in (0 : ℝ)..S, ‖v t + (1 / γ) • F (φ t)‖ ^ 2 ≤
+      m * (G / γ ^ 2 * Real.exp (H * S / γ)) * (G / γ + 2 * G * H * S / γ ^ 2) := by
+  have hγ := P.gamma
+  have hH := P.Hpos
+  have hG := P.Gnn
+  set c := G / γ ^ 2 * Real.exp (H * S / γ) with hc
+  have hc0 : 0 ≤ c := by positivity
+  have he : ∀ t, 0 ≤ t → t ≤ S → ‖θ t - φ t‖ ≤ m * c := by
+    intro t ht htS
+    refine (T.dist_flow_le P Fl hm h0 ht).trans ?_
+    rw [hc, ← mul_assoc, ← mul_div_assoc]
+    have : Real.exp (H * t / γ) ≤ Real.exp (H * S / γ) := Real.exp_le_exp.2 (by gcongr)
+    have h4 : 0 ≤ m * G / γ ^ 2 := by positivity
+    exact mul_le_mul_of_nonneg_left this h4
+  let g : ℝ → ℝ := fun t => ‖v t‖ ^ 2 + 2 * ⟪F (θ t), v t⟫ / γ + ‖F (φ t)‖ ^ 2 / γ ^ 2
+  have hsub : Set.Icc (0 : ℝ) S ⊆ Set.Ici 0 := Set.Icc_subset_Ici_self
+  have hcv := T.contv.mono hsub
+  have hcFθ := (T.contFθ P).mono hsub
+  have hcFφ := (Fl.contFφ P).mono hsub
+  have hg_cont : ContinuousOn g (Set.Icc 0 S) :=
+    (((hcv.norm.pow 2).add (((hcFθ.inner hcv).const_mul 2).div_const γ)).add
+      ((hcFφ.norm.pow 2).div_const _))
+  have hw_cont : ContinuousOn (fun t => ‖v t + (1 / γ) • F (φ t)‖ ^ 2) (Set.Icc 0 S) :=
+    ((hcv.add (continuousOn_const.smul hcFφ)).norm).pow 2
+  have hI : Set.uIcc (0 : ℝ) S = Set.Icc 0 S := Set.uIcc_of_le hS
+  have hPsi : ∫ t in (0 : ℝ)..S, g t =
+      (L (θ S) - m / 2 * ‖v S‖ ^ 2 - L (φ S)) / γ -
+        (L (θ 0) - m / 2 * ‖v 0‖ ^ 2 - L (φ 0)) / γ :=
+    integral_eq_sub_of_hasDerivAt
+      (fun t ht => by rw [hI] at ht; exact T.hasDeriv_Psi P Fl ht.1)
+      (by rw [hI] at *; exact hg_cont.intervalIntegrable_of_Icc hS)
+  have hPsi0 : (L (θ 0) - m / 2 * ‖v 0‖ ^ 2 - L (φ 0)) / γ = 0 := by
+    simp [h0, T.rest]
+  have hPsiS : (L (θ S) - m / 2 * ‖v S‖ ^ 2 - L (φ S)) / γ ≤ G * (m * c) / γ := by
+    rw [div_le_div_iff_of_pos_right hγ]
+    have h1 := P.L_sub_le (T.mem S hS) (Fl.mem S hS)
+    have h2 := he S hS le_rfl
+    have h3 : 0 ≤ m / 2 * ‖v S‖ ^ 2 := by positivity
+    nlinarith [mul_le_mul_of_nonneg_left h2 hG]
+  have hpt : ∀ t ∈ Set.Icc (0 : ℝ) S,
+      ‖v t + (1 / γ) • F (φ t)‖ ^ 2 ≤ g t + 2 * G * H * (m * c) / γ ^ 2 := by
+    intro t ht
+    have ht0 : 0 ≤ t := ht.1
+    have hvb := T.vel_bound P hm ht0
+    have hdiff : ‖F (φ t) - F (θ t)‖ ≤ H * (m * c) := by
+      have := P.lip _ (Fl.mem t ht0) _ (T.mem t ht0)
+      rw [norm_sub_rev (φ t) (θ t)] at this
+      exact this.trans (by gcongr; exact he t ht0 ht.2)
+    have hexp : ‖v t + (1 / γ) • F (φ t)‖ ^ 2 =
+        ‖v t‖ ^ 2 + 2 * ⟪v t, F (φ t)⟫ / γ + ‖F (φ t)‖ ^ 2 / γ ^ 2 := by
+      rw [norm_add_sq_real, real_inner_smul_right, norm_smul, mul_pow]
+      simp only [norm_div, norm_one, Real.norm_of_nonneg hγ.le]
+      field_simp
+    have hcs : ⟪v t, F (φ t) - F (θ t)⟫ ≤ G / γ * (H * (m * c)) := by
+      refine (real_inner_le_norm _ _).trans ?_
+      exact mul_le_mul hvb hdiff (norm_nonneg _) (by positivity)
+    have : ⟪v t, F (φ t) - F (θ t)⟫ = ⟪v t, F (φ t)⟫ - ⟪F (θ t), v t⟫ := by
+      rw [inner_sub_right, real_inner_comm (v t) (F (θ t))]
+    rw [hexp]
+    simp only [g]
+    have e2 : 2 * G * H * (m * c) / γ ^ 2 = 2 * (G / γ * (H * (m * c))) / γ := by
+      field_simp
+    rw [e2]
+    have : 2 * ⟪v t, F (φ t)⟫ / γ ≤ 2 * ⟪F (θ t), v t⟫ / γ + 2 * (G / γ * (H * (m * c))) / γ := by
+      rw [← add_div, div_le_div_iff_of_pos_right hγ]
+      linarith
+    linarith
+  calc ∫ t in (0 : ℝ)..S, ‖v t + (1 / γ) • F (φ t)‖ ^ 2
+      ≤ ∫ t in (0 : ℝ)..S, (g t + 2 * G * H * (m * c) / γ ^ 2) :=
+        integral_mono_on hS (by rw [← hI] at hw_cont; exact hw_cont.intervalIntegrable)
+          (by
+            rw [← hI] at hg_cont
+            exact (hg_cont.add continuousOn_const).intervalIntegrable)
+          hpt
+    _ = (∫ t in (0 : ℝ)..S, g t) + S * (2 * G * H * (m * c) / γ ^ 2) := by
+        rw [intervalIntegral.integral_add
+          (by rw [← hI] at hg_cont; exact hg_cont.intervalIntegrable)
+          intervalIntegrable_const]
+        simp
+        ring
+    _ ≤ G * (m * c) / γ + S * (2 * G * H * (m * c) / γ ^ 2) := by
+        rw [hPsi, hPsi0]; linarith
+    _ = m * c * (G / γ + 2 * G * H * S / γ ^ 2) := by ring
+
 end Setup
 
 end ViscosityML
