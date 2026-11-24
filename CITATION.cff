@@ -6,14 +6,14 @@ authors:
     given-names: Pragyaan
     orcid: "https://orcid.org/0009-0009-4037-2478"
 repository-code: "https://github.com/pragyaangaur/Viscous-Conservation-Laws"
-doi: "10.5281/zenodo.23510522"
+doi: "10.5281/zenodo.24495643"
 identifiers:
   - type: doi
     value: "10.5281/zenodo.23510521"
     description: "Concept DOI, always the newest version on Zenodo"
 license: MIT
-version: "1.0.0"
-date-released: "2026-10-21"
+version: "2.0.0"
+date-released: "2026-11-24"
 keywords:
   - conservation laws
   - momentum
@@ -25,4 +25,4 @@ abstract: >-
   Exact identities and uniform-in-time bounds for how heavy ball and Nesterov momentum
   break the quadratic conservation laws that symmetries give a network, with a proof that
   Nesterov's schedule keeps a step-size independent drift for positive semidefinite
-  generators. The identities and finite-time bounds are formalised in Lean 4 with Mathlib.
+  generators. The identities, the bounds, their infinite-time limits and the first-order formula in the mass are formalised in Lean 4 with Physlib and Mathlib.
