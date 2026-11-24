@@ -4,3 +4,4 @@ import ViscosityML.LinearNet
 import ViscosityML.Nesterov
 import ViscosityML.NesterovLower
 import ViscosityML.Limits
+import ViscosityML.Dichotomy
