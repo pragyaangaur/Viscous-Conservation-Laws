@@ -21,6 +21,7 @@ Parameters live in an arbitrary real inner product space `E`. The generator `A` 
 | `ViscosityML/Nesterov.lean` | The exact identity for Nesterov's method |
 | `ViscosityML/NesterovLower.lean` | The step-size free lower bound for positive semidefinite generators |
 | `ViscosityML/Dichotomy.lean` | The final choice of J in Corollary 12 |
+| `ViscosityML/FirstOrder.lean` | Theorem 3, the first order formula in the mass, with the existence of the limits |
 | `Axioms.lean` | Prints the axioms of the main theorems |
 
 ## Paper, Lean and numerics
@@ -37,8 +38,8 @@ The theorem numbers are those of the preprint, where all theorems, propositions,
 | Theorem 1, limit identity (hblim) | `hb_limit_identity` | `exp_continuous.py` E1 |
 | Theorem 1, limit bound (hblim) | `hb_limit_bound` | `exp_continuous.py` E1 |
 | Proposition 2, sharpness | `hb_sharp_finite`, `hb_sharp_limit` | `exp_continuous.py` E1c |
-| Theorem 3, first order in the mass | Not in Lean | `exp_continuous.py` E1 column `dQ/m` and E1b |
-| Lemma 4 | Not in Lean | None |
+| Theorem 3, first order in the mass | `first_order_mass_full`, `first_order_mass`, with `Traj.vel_bound`, `Traj.dist_flow_le`, `Traj.l2_le`, `Traj.K_integral_diff`, `Traj.gap_finite`, `Traj.gap_infinite`, `Traj.P_tendsto`, `Traj.Q_tendsto` | `exp_continuous.py` E1 column `dQ/m` and E1b |
+| Lemma 4 | Not in Lean, and the Lean proof of Theorem 3 does not use it | None |
 | Theorem 5, step identity and recursion | `Q_step`, `P_zero`, `P_succ`, `drift_eq_sum` | `exp_discrete.py` D1 |
 | Theorem 5, identity (discid) | `P_const`, `drift_const` | `exp_discrete.py` D1 and D2, `drift_scale_invariant` for `A = I` |
 | Theorem 6, first bound | `abs_K_le`, `drift_bound_const` | `exp_discrete.py` D1 column `b1` |
@@ -57,7 +58,10 @@ The theorem numbers are those of the preprint, where all theorems, propositions,
 
 ## Differences between the paper, the Lean statements and the checks
 
-* Lean states the limits as `T → ∞` of the finite identities and takes the existence of the limits as hypotheses (`Q` converges, `P → 0`, the integral converges). The paper proves for heavy ball that these hold under (H1) and (H2), and that part is not in Lean.
+* In `Limits.lean` the limits `T → ∞` of the finite identities take the existence of the limits as hypotheses (`Q` converges, `P → 0`, the integral converges). `FirstOrder.lean` proves these existence statements for heavy ball under (H1) (`Traj.integrable_K`, `Traj.P_tendsto`, `Traj.Q_tendsto`).
+* The Lean proof of Theorem 3 follows a different route from the paper. The paper uses Lemma 4 and the Cauchy-Schwarz inequality. Lean bounds the mean square distance of the velocities by an energy identity for `v + F(φ)/γ` and then uses `x ≤ (x²/√m + √m)/2`, so the finite horizon error it proves is of order `√m`. The limit statement is the same. Lemma 4 is left out of Lean because the proof does not need it.
+* The paper shows that `P → 0` by boundedness of `θ` and uniform continuity. Lean shows it from the equation `P' = K - (γ/m) P` and the integrability of `K`, which needs no boundedness of `θ`.
+* The Lean version of (H1) asks for a convex set `B` that contains the trajectories, a bound `G` and a Lipschitz constant `H > 0` for the gradient on `B`. Compactness of `B` is not used. The trajectories solve the equations for `t ≥ 0` with two-sided derivatives at `0`, and `L` has gradient `F` everywhere, with `L ≥ Lstar` for the infimum.
 * The continuous results are stated for functions `θ`, `v`, `a`, `G` with `HasDerivAt` hypotheses. The paper writes `G = ∇L(θ)`. The chain rule `d/dt L(θ) = ⟪G, v⟫` is a hypothesis of the energy statements.
 * The Nesterov ODE bound is proved from time `0` under continuity of `θ`, `v` and `L` on `[0, ∞)` and `v 0 = 0`. The paper says only that the motion starts at rest.
 * The constants `G` and `H` in `exp_nesterov_proof.py` N3 are estimated from 4000 random pairs of points, so the printed constant `7.2e-7` is an estimate of what Corollary 12 guarantees. Lean takes `G` and `H` as given hypotheses.
