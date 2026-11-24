@@ -681,6 +681,128 @@ theorem Traj.gap_finite (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
         simpa [sub_eq_add_neg, abs_neg] using this
     _ ≤ _ := by linarith
 
+/-- The gap of the integrals over `(0, ∞)`, for every cut time `T₀`. -/
+theorem Traj.gap_infinite (P : Prob F L A B γ G H) (T : Traj F B γ m θ v a)
+    (Fl : Flow F B γ φ φ') (hm : 0 < m) (h0 : θ 0 = φ 0) {Lstar : ℝ}
+    (hL : ∀ x, Lstar ≤ L x) {T₀ : ℝ} (hT₀ : 0 ≤ T₀) :
+    |(∫ t in Set.Ioi (0 : ℝ), ⟪v t, A (v t)⟫) -
+        ∫ t in Set.Ioi (0 : ℝ), ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2| ≤
+      ‖A‖ * (G / γ) * Real.sqrt m *
+        (G / γ ^ 2 * Real.exp (H * T₀ / γ) * (G / γ + 2 * G * H * T₀ / γ ^ 2) + T₀) +
+      ‖A‖ / γ * (2 * (L (φ T₀) - Lstar) +
+        m * (G ^ 2 / (2 * γ ^ 2) + G * (G / γ ^ 2 * Real.exp (H * T₀ / γ)))) := by
+  have hγ := P.gamma
+  have hG := P.Gnn
+  have h1 := (intervalIntegral_tendsto_integral_Ioi 0 (T.integrable_K P hm.le hL) tendsto_id)
+  have h2 := (intervalIntegral_tendsto_integral_Ioi 0 (Fl.integrable_K P hL) tendsto_id)
+  have hlim := (h1.sub h2).abs
+  have hE : (m / 2 * ‖v T₀‖ ^ 2 + L (θ T₀)) - Lstar ≤
+      (L (φ T₀) - Lstar) + m * (G ^ 2 / (2 * γ ^ 2) + G * (G / γ ^ 2 * Real.exp (H * T₀ / γ))) := by
+    have hv := T.vel_bound P hm hT₀
+    have hv2 : ‖v T₀‖ ^ 2 ≤ (G / γ) ^ 2 := by gcongr
+    have hLθ := P.L_sub_le (T.mem T₀ hT₀) (Fl.mem T₀ hT₀)
+    have he := T.dist_flow_le P Fl hm h0 hT₀
+    have h3 : m / 2 * ‖v T₀‖ ^ 2 ≤ m * (G ^ 2 / (2 * γ ^ 2)) := by
+      calc m / 2 * ‖v T₀‖ ^ 2 ≤ m / 2 * (G / γ) ^ 2 := by gcongr
+        _ = m * (G ^ 2 / (2 * γ ^ 2)) := by field_simp
+    have h4 : G * ‖θ T₀ - φ T₀‖ ≤ m * (G * (G / γ ^ 2 * Real.exp (H * T₀ / γ))) := by
+      calc G * ‖θ T₀ - φ T₀‖ ≤ G * (m * G / γ ^ 2 * Real.exp (H * T₀ / γ)) := by gcongr
+        _ = _ := by ring
+    nlinarith
+  refine le_of_tendsto hlim ?_
+  filter_upwards [eventually_ge_atTop T₀] with S hS
+  have := T.gap_finite P Fl hm h0 hL hT₀ hS
+  refine this.trans ?_
+  have hk : 0 ≤ ‖A‖ / γ := by positivity
+  have := mul_le_mul_of_nonneg_left hE hk
+  nlinarith
+
+/-- **Theorem 3, first order in the mass.** Let `θ m` be heavy ball trajectories with masses
+`m ∈ (0, m₀]` started at rest at `φ 0`, and `φ` gradient flow, all inside `B`, with the
+loss bounded below by `Lstar` and `L (φ t) → Lstar` (hypothesis (H2)). Assume that for each
+`m` the limits `Q → Qinf m` and `P → 0` exist. Then
+`(Qinf m - Q (φ 0)) / m` tends to `(2 / γ³) ∫₀^∞ ⟪F, A F⟫` along gradient flow as `m → 0`. -/
+theorem first_order_mass (P : Prob F L A B γ G H) (Fl : Flow F B γ φ φ') {m₀ Lstar : ℝ}
+    (hm₀ : 0 < m₀) (hL : ∀ x, Lstar ≤ L x)
+    (hH2 : Tendsto (fun t => L (φ t)) atTop (𝓝 Lstar))
+    {θ v a : ℝ → ℝ → E}
+    (hT : ∀ m, 0 < m → m ≤ m₀ → Traj F B γ m (θ m) (v m) (a m))
+    (h0 : ∀ m, 0 < m → m ≤ m₀ → θ m 0 = φ 0) {Qinf : ℝ → ℝ}
+    (hQ : ∀ m, 0 < m → m ≤ m₀ → Tendsto (fun T => Q A (θ m T)) atTop (𝓝 (Qinf m)))
+    (hPm : ∀ m, 0 < m → m ≤ m₀ →
+      Tendsto (fun T => ⟪v m T, A (θ m T)⟫) atTop (𝓝 0)) :
+    Tendsto (fun m => (Qinf m - Q A (φ 0)) / m) (𝓝[>] 0)
+      (𝓝 (2 / γ ^ 3 * ∫ t in Set.Ioi (0 : ℝ), ⟪F (φ t), A (F (φ t))⟫)) := by
+  have hγ := P.gamma
+  have hG := P.Gnn
+  -- the exact identity for each m
+  have hI : ∀ m, 0 < m → m ≤ m₀ →
+      (Qinf m - Q A (φ 0)) / m = 2 / γ * ∫ t in Set.Ioi (0 : ℝ), ⟪v m t, A (v m t)⟫ := by
+    intro m hm hmm
+    have Tm := hT m hm hmm
+    have h1 : Tendsto (fun S => γ * (Q A (θ m S) - Q A (θ m 0)) + 2 * m * ⟪v m S, A (θ m S)⟫)
+        atTop (𝓝 (γ * (Qinf m - Q A (θ m 0)) + 2 * m * 0)) :=
+      (((hQ m hm hmm).sub_const _).const_mul γ).add ((hPm m hm hmm).const_mul (2 * m))
+    have h2 : Tendsto (fun S => 2 * m * ∫ t in (0 : ℝ)..S, ⟪v m t, A (v m t)⟫) atTop
+        (𝓝 (2 * m * ∫ t in Set.Ioi (0 : ℝ), ⟪v m t, A (v m t)⟫)) :=
+      (intervalIntegral_tendsto_integral_Ioi 0 (Tm.integrable_K P hm.le hL) tendsto_id).const_mul _
+    have h3 := tendsto_nhds_unique (h1.congr' (by
+      filter_upwards [eventually_ge_atTop (0 : ℝ)] with S hS
+      exact Tm.identity P hS)) h2
+    rw [h0 m hm hmm] at h3
+    field_simp
+    linarith
+  -- convergence of the integrals
+  have hconv : Tendsto (fun m => ∫ t in Set.Ioi (0 : ℝ), ⟪v m t, A (v m t)⟫) (𝓝[>] 0)
+      (𝓝 (∫ t in Set.Ioi (0 : ℝ), ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2)) := by
+    rw [Metric.tendsto_nhds]
+    intro ε hε
+    have hA : 0 ≤ ‖A‖ / γ := by positivity
+    obtain ⟨T₀, hT₀, hLT⟩ : ∃ T₀ : ℝ, 0 ≤ T₀ ∧ ‖A‖ / γ * (2 * (L (φ T₀) - Lstar)) < ε / 2 := by
+      have hc : Tendsto (fun t => ‖A‖ / γ * (2 * (L (φ t) - Lstar))) atTop
+          (𝓝 (‖A‖ / γ * (2 * (Lstar - Lstar)))) :=
+        ((hH2.sub_const _).const_mul 2).const_mul _
+      have hev : ∀ᶠ t in atTop, ‖A‖ / γ * (2 * (L (φ t) - Lstar)) < ε / 2 := by
+        refine hc.eventually (gt_mem_nhds ?_)
+        simp; positivity
+      obtain ⟨T₁, hT₁⟩ := eventually_atTop.1 (hev.and (eventually_ge_atTop (0 : ℝ)))
+      exact ⟨T₁, (hT₁ T₁ le_rfl).2, (hT₁ T₁ le_rfl).1⟩
+    set c₀ := G / γ ^ 2 * Real.exp (H * T₀ / γ) with hc₀
+    set Ck := ‖A‖ * (G / γ) * (c₀ * (G / γ + 2 * G * H * T₀ / γ ^ 2) + T₀) with hCk
+    set D := G ^ 2 / (2 * γ ^ 2) + G * c₀ with hD
+    have hsmall : Tendsto (fun m : ℝ => Ck * Real.sqrt m + ‖A‖ / γ * (m * D)) (𝓝[>] 0)
+        (𝓝 0) := by
+      have hcont : Continuous fun m : ℝ => Ck * Real.sqrt m + ‖A‖ / γ * (m * D) := by
+        fun_prop
+      have := hcont.continuousAt (x := 0) |>.tendsto
+      simp at this
+      exact this.mono_left nhdsWithin_le_nhds
+    have hev1 : ∀ᶠ m in 𝓝[>] (0 : ℝ), Ck * Real.sqrt m + ‖A‖ / γ * (m * D) < ε / 2 :=
+      hsmall.eventually (gt_mem_nhds (half_pos hε))
+    have hev2 : ∀ᶠ m in 𝓝[>] (0 : ℝ), m ∈ Set.Ioc 0 m₀ := Ioc_mem_nhdsGT hm₀
+    filter_upwards [hev1, hev2] with m h1 h2
+    obtain ⟨hm, hmm⟩ := h2
+    have := (hT m hm hmm).gap_infinite P Fl hm (h0 m hm hmm) hL hT₀
+    rw [Real.dist_eq]
+    refine lt_of_le_of_lt this ?_
+    have e : ‖A‖ * (G / γ) * Real.sqrt m *
+          (G / γ ^ 2 * Real.exp (H * T₀ / γ) * (G / γ + 2 * G * H * T₀ / γ ^ 2) + T₀) +
+        ‖A‖ / γ * (2 * (L (φ T₀) - Lstar) +
+          m * (G ^ 2 / (2 * γ ^ 2) + G * (G / γ ^ 2 * Real.exp (H * T₀ / γ)))) =
+        (Ck * Real.sqrt m + ‖A‖ / γ * (m * D)) + ‖A‖ / γ * (2 * (L (φ T₀) - Lstar)) := by
+      simp only [hCk, hD, hc₀]; ring
+    rw [e]
+    linarith
+  have hfin := (hconv.const_mul (2 / γ)).congr' (by
+    filter_upwards [Ioc_mem_nhdsGT hm₀] with m hm
+    exact (hI m hm.1 hm.2).symm)
+  have e : 2 / γ * ∫ t in Set.Ioi (0 : ℝ), ⟪F (φ t), A (F (φ t))⟫ / γ ^ 2 =
+      2 / γ ^ 3 * ∫ t in Set.Ioi (0 : ℝ), ⟪F (φ t), A (F (φ t))⟫ := by
+    rw [MeasureTheory.integral_div]
+    field_simp
+  rw [e] at hfin
+  exact hfin
+
 end Setup
 
 end ViscosityML
